@@ -176,12 +176,14 @@ changeSSHPort(){
     echoColoredText "BLUE" "Please enter text for append new port after it: "
     read parentText
     showDevider 10
-    sudo cp -fv /etc/ssh/sshd_config /etc/ssh/sshd_config_BACKUP
-    sudo cp -fv /etc/ssh/sshd_config /etc/ssh/sshd_config_CHANGED
+    backupFileName="sshd_config_BACKUP"`date +"%Y%m%d%H%M%S"`
+    changedFileName="sshd_config_CHANGED"`date +"%Y%m%d%H%M%S"`
+    sudo cp -fv /etc/ssh/sshd_config /etc/ssh/$backupFileName
+    sudo cp -fv /etc/ssh/sshd_config /etc/ssh/$changedFileName
     showDevider 10
     echoColoredText "BLUE" "Please enter new SSH Port: "
     read newSSHPort
-    sudo sed -i "s/^${parentText}.*/${parentText} \r\n Port ${newSSHPort}/" /etc/ssh/sshd_config_CHANGED
+    sudo sed -i "s/^${parentText}.*/${parentText} \r\n Port ${newSSHPort}/" /etc/ssh/$changedFileName
     showDevider 10
     echoColoredText "ORANGE" "Orginall sshd_config:"
     showDevider 10
@@ -191,7 +193,7 @@ changeSSHPort(){
     echoColoredText "ORANGE" "Changed sshd_config:"
     showDevider 10
     sleep 3
-    sudo cat /etc/ssh/sshd_config_CHANGED
+    sudo cat /etc/ssh/$changedFileName
 
     changeAnswer="";
     while [ "$changeAnswer" != "y" ] && [ "$changeAnswer" != "n" ]; do   
@@ -200,7 +202,12 @@ Are you sure you want to replace the original sshd_config with a modified sshd_c
     read changeAnswer 
     done
 
-    echo $changeAnswer
+    
+    if [[ $changeAnswer = "y" ]]; then
+      sudo cp -fvi /etc/ssh/$changedFileName /etc/ssh/sshd_config 
+    else
+      echoColoredText "ORANGE" "Nothing changed"
+    fi
 
     echoColoredText "GREEN" "End change SSH port"
   elif [[ $answer = "n" ]]; then
@@ -210,6 +217,30 @@ Are you sure you want to replace the original sshd_config with a modified sshd_c
   fi
 }
 
+restoresshd_config(){
+  answer="";
+    while [ "$answer" != "y" ] && [ "$answer" != "n" ]; do   
+      echoColoredText "BLUE" "Are You sure to restore last sshd_config backup?y/n"
+      read answer 
+    done
+    if [[ $answer = "y" ]]; then
+      showDevider 30
+      echoColoredText "GREEN" "Start restore sshd_config"
+      echoColoredText "ORANGE" "Please enter number of backup file for restore:"
+      cd /etc/ssh/
+      ls -ltr sshd_config_BACKUP* | awk '{print $9, $6, $7, $8}' |nl -v 0
+      echoColoredText "ORANGE" "Please enter number from above list:"
+      read backupNumber
+      arr=( /etc/ssh/sshd_config_BACKUP* )
+      echo "${arr[$backupNumber]}"
+      sudo cp -fvi "${arr[$backupNumber]}" /etc/ssh/sshd_config
+      echoColoredText "GREEN" "End restore sshd_config" 
+      showDevider 30
+    else
+      echoColoredText "ORANGE" "Nothing changed"
+      showDevider 30
+    fi
+}
 
 
 
@@ -224,11 +255,11 @@ Menu(){
     3  - Add New User
     4  - Change Other User Password
     5  - Change SSH Port
-    6  - Renew SSl
+    6  - Restore sshd_config Backup
     7  - backup
     8  - restore
     9  - localbackup
-    20 - All"
+    20 - Update System - Install Nano - Add New User - Change Other User Password - Change SSH Port"
     echoColoredText "GREEN" "Whats is your Choices?"
 
     read mode
@@ -260,7 +291,7 @@ Menu(){
         ;;
         
         6)
-            renewSSL
+            restoresshd_config
         ;;
         
         7)
