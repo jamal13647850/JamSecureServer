@@ -242,6 +242,34 @@ restoresshd_config(){
     fi
 }
 
+installDocker(){
+  echoColoredText "GREEN" "Start install docker"
+  answer="";
+    while [ "$answer" != "y" ] && [ "$answer" != "n" ]; do   
+      echoColoredText "BLUE" "Do you want add shekan ip to /etc/resolv.conf?y/n"
+      read answer 
+    done
+    if [[ $answer = "y" ]]; then
+      showDevider 30
+      echoColoredText "GREEN" "Start restore sshd_config"
+      echoColoredText "ORANGE" "Please enter number of backup file for restore:"
+      cd /etc/ssh/
+      ls -ltr sshd_config_BACKUP* | awk '{print $9, $6, $7, $8}' |nl -v 0
+      echoColoredText "ORANGE" "Please enter number from above list:"
+      read backupNumber
+      arr=( /etc/ssh/sshd_config_BACKUP* )
+      echo "${arr[$backupNumber]}"
+      sudo cp -fvi "${arr[$backupNumber]}" /etc/ssh/sshd_config
+      echoColoredText "GREEN" "End restore sshd_config" 
+      showDevider 30
+    else
+      echoColoredText "ORANGE" "Nothing changed"
+      showDevider 30
+    fi
+
+  sudo echo "nameserver 178.22.122.100">>/etc/resolv.conf
+  sudo echo "nameserver 185.51.200.2">>/etc/resolv.conf
+}
 
 
 
@@ -256,7 +284,7 @@ Menu(){
     4  - Change Other User Password
     5  - Change SSH Port
     6  - Restore sshd_config Backup
-    7  - backup
+    7  - Install Docker
     8  - restore
     9  - localbackup
     20 - Update System - Install Nano - Add New User - Change Other User Password - Change SSH Port"
@@ -295,7 +323,7 @@ Menu(){
         ;;
         
         7)
-            ./backup.sh
+            installDocker
         ;;
         
         8)
